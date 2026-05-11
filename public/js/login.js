@@ -29,7 +29,7 @@
         const password = document.getElementById("password").value;
 
         try {
-            const res = await fetch("https://par17001299.github.io/EP-services/", {
+            const res = await fetch("http://localhost:3000/api/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password })
