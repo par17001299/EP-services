@@ -1,19 +1,27 @@
 // server.js
 const express = require("express");
-const bcrypt = require("bcrypt");
-const db = require("./db");
-const path = require("path");
 const cors = require("cors");
+const bcrypt = require("bcrypt");
+const path = require("path");
+const db = require("./db"); // mysql2/promise pool
 
 const app = express();
 const PORT = 3000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// ---------------------------------------------------
+// MIDDLEWARE
+// ---------------------------------------------------
+app.use(cors()); // allow frontend on 5500 or GitHub Pages
+app.use(express.json()); // parse JSON bodies
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static frontend
 app.use(express.static(path.join(__dirname, "public")));
 
-// LOGIN ROUTE
+
+// ---------------------------------------------------
+// LOGIN ROUTE (Database-backed)
+// ---------------------------------------------------
 app.post("/api/login", async (req, res) => {
     const { email, password } = req.body;
 
@@ -29,11 +37,13 @@ app.post("/api/login", async (req, res) => {
 
         const user = rows[0];
 
+        // Compare hashed password
         const match = await bcrypt.compare(password, user.password_hash);
         if (!match) {
             return res.status(401).json({ error: "Invalid email or password" });
         }
 
+        // Build safe session object
         const sessionUser = {
             id: user.id,
             name: user.name,
@@ -44,17 +54,25 @@ app.post("/api/login", async (req, res) => {
         };
 
         res.json({ user: sessionUser });
+
     } catch (err) {
-        console.error("Login error:", err);
+        console.error("LOGIN ERROR:", err);
         res.status(500).json({ error: "Server error" });
     }
 });
 
-// Fallback to login page
-app.get("/", (req, res) => {
+
+// ---------------------------------------------------
+// FALLBACK — Always send login page
+// ---------------------------------------------------
+app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "pages", "login.html"));
 });
 
+
+// ---------------------------------------------------
+// START SERVER
+// ---------------------------------------------------
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`EP Systems backend running at http://localhost:${PORT}`);
 });
